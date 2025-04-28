@@ -22,6 +22,11 @@ export interface Room {
   number: number;
   patientId?: string;
   status: PatientStatus;
+  active: boolean;
+  sector: string;
+  floor: number;
+  hasEquipment: string[];
+  hasBathroom: boolean;
 }
 
 export interface Alert {
@@ -46,15 +51,123 @@ interface PatientContextType {
   getPatientByRoom: (roomNumber: number) => Patient | undefined;
   updateHeartRateLimits: (patientId: string, min: number, max: number) => void;
   getRoom: (roomNumber: number) => Room | undefined;
+  toggleRoomActive: (roomNumber: number) => void;
+  updateRoom: (roomNumber: number, roomData: Partial<Room>) => void;
 }
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 // Mock data
-const mockRooms: Room[] = Array.from({ length: 12 }, (_, i) => ({
-  number: i + 101,
-  status: 'empty',
-}));
+const mockRooms: Room[] = [
+  {
+    number: 101,
+    status: 'empty',
+    active: true,
+    sector: 'Cardiologia',
+    floor: 1,
+    hasEquipment: ['Monitor cardíaco', 'Respirador'],
+    hasBathroom: true
+  },
+  {
+    number: 102,
+    status: 'alert',
+    active: true,
+    sector: 'Cardiologia',
+    floor: 1,
+    hasEquipment: ['Monitor cardíaco', 'Oxigênio'],
+    hasBathroom: true
+  },
+  {
+    number: 103,
+    status: 'urgent',
+    active: true,
+    sector: 'Cardiologia',
+    floor: 1,
+    hasEquipment: ['Monitor cardíaco', 'Respirador', 'Bomba de Infusão'],
+    hasBathroom: true
+  },
+  {
+    number: 104,
+    status: 'empty',
+    active: false,
+    sector: 'Cardiologia',
+    floor: 1,
+    hasEquipment: ['Monitor cardíaco'],
+    hasBathroom: false
+  },
+  {
+    number: 201,
+    status: 'empty',
+    active: true,
+    sector: 'Pneumologia',
+    floor: 2,
+    hasEquipment: ['Monitor cardíaco', 'Respirador'],
+    hasBathroom: true
+  },
+  {
+    number: 202,
+    status: 'empty',
+    active: true,
+    sector: 'Pneumologia',
+    floor: 2,
+    hasEquipment: ['Monitor cardíaco'],
+    hasBathroom: true
+  },
+  {
+    number: 203,
+    status: 'empty',
+    active: false,
+    sector: 'Pneumologia',
+    floor: 2,
+    hasEquipment: ['Monitor cardíaco', 'Respirador'],
+    hasBathroom: false
+  },
+  {
+    number: 204,
+    status: 'empty',
+    active: true,
+    sector: 'Pneumologia',
+    floor: 2,
+    hasEquipment: ['Monitor cardíaco', 'Oxigênio'],
+    hasBathroom: true
+  },
+  {
+    number: 301,
+    status: 'empty',
+    active: true,
+    sector: 'Neurologia',
+    floor: 3,
+    hasEquipment: ['Monitor cardíaco', 'Monitor de Pressão Intracraniana'],
+    hasBathroom: true
+  },
+  {
+    number: 302,
+    status: 'empty',
+    active: true,
+    sector: 'Neurologia',
+    floor: 3,
+    hasEquipment: ['Monitor cardíaco'],
+    hasBathroom: true
+  },
+  {
+    number: 303,
+    status: 'empty',
+    active: false,
+    sector: 'Neurologia',
+    floor: 3,
+    hasEquipment: ['Monitor cardíaco', 'Respirador'],
+    hasBathroom: false
+  },
+  {
+    number: 304,
+    status: 'empty',
+    active: true,
+    sector: 'Neurologia',
+    floor: 3,
+    hasEquipment: ['Monitor cardíaco', 'Respirador', 'Bomba de Infusão'],
+    hasBathroom: true
+  }
+];
 
 const mockPatients: Patient[] = [
   {
@@ -247,6 +360,47 @@ export function PatientProvider({ children }: PatientProviderProps) {
     return rooms.find((room) => room.number === roomNumber);
   };
 
+  const toggleRoomActive = (roomNumber: number) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.number === roomNumber) {
+          const newActive = !room.active;
+          // If room is becoming inactive and has a patient, remove patient
+          if (!newActive && room.patientId) {
+            const patientToUpdate = patients.find(p => p.roomNumber === roomNumber);
+            if (patientToUpdate) {
+              setPatients(
+                patients.map(p => 
+                  p.id === patientToUpdate.id ? { ...p, roomNumber: null } : p
+                )
+              );
+              toast.info(`Paciente ${patientToUpdate.name} desvinculado do quarto ${roomNumber} devido à desativação`);
+            }
+            return {
+              ...room,
+              active: newActive,
+              patientId: undefined,
+              status: 'empty'
+            };
+          }
+          return { ...room, active: newActive };
+        }
+        return room;
+      })
+    );
+    const action = rooms.find(r => r.number === roomNumber)?.active ? 'desativado' : 'ativado';
+    toast.success(`Quarto ${roomNumber} ${action} com sucesso!`);
+  };
+
+  const updateRoom = (roomNumber: number, roomData: Partial<Room>) => {
+    setRooms(
+      rooms.map((room) =>
+        room.number === roomNumber ? { ...room, ...roomData } : room
+      )
+    );
+    toast.success(`Informações do quarto ${roomNumber} atualizadas!`);
+  };
+
   return (
     <PatientContext.Provider
       value={{
@@ -261,6 +415,8 @@ export function PatientProvider({ children }: PatientProviderProps) {
         getPatientByRoom,
         updateHeartRateLimits,
         getRoom,
+        toggleRoomActive,
+        updateRoom,
       }}
     >
       {children}

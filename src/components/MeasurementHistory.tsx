@@ -48,6 +48,7 @@ const generateMockData = (patient: Patient) => {
 const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ patient }) => {
   const data = generateMockData(patient);
   
+  // Function to get heart rate color based on value
   const getHeartRateColor = (heartRate: number) => {
     if (heartRate < patient.minHeartRate) return '#c41c1c'; // below min
     if (heartRate > patient.maxHeartRate) return '#c41c1c'; // above max
@@ -84,9 +85,9 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ patient }) => {
                   type="monotone" 
                   dataKey="heartRate" 
                   name="Frequência Cardíaca"
-                  stroke={(d) => getHeartRateColor(d.heartRate)}
+                  stroke="#3b82f6"
                   strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2 }}
+                  dot={{ r: 4, strokeWidth: 2, fill: (data: any) => getHeartRateColor(data.heartRate) }}
                   activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
                   isAnimationActive={true}
                 />
