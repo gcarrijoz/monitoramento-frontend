@@ -5,7 +5,7 @@ import Layout from '@/components/Layout';
 import { usePatients } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, Heart, Home, Edit } from 'lucide-react';
+import { ChevronLeft, Heart, Home, Edit, LineChart } from 'lucide-react';
 import MeasurementHistory from '@/components/MeasurementHistory';
 
 const PatientDetail = () => {
@@ -127,7 +127,7 @@ const PatientDetail = () => {
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-gray-500">Não alocado</span>
                         {availableRooms.length > 0 ? (
-                          <Link to={`/assign-patient/${patient.id}`}>
+                          <Link to={`/assign-patient-to-room/${patient.id}`}>
                             <Button variant="outline" size="sm">
                               Vincular a um quarto
                             </Button>
@@ -157,7 +157,7 @@ const PatientDetail = () => {
           {/* Right column - History and vitals */}
           <div className="md:col-span-2">
             {patient.status !== 'empty' ? (
-              <MeasurementHistory patient={patient} />
+              <MeasurementHistory patient={patient} expandable={true} />
             ) : (
               <Card>
                 <CardHeader className="pb-2">

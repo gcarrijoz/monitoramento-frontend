@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ChevronLeft, Heart, Settings, FileText, UserX, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Heart, Settings, FileText, UserX, AlertCircle, LineChart } from 'lucide-react';
 import { PatientStatus } from '@/contexts/PatientContext';
 
 const RoomDetail = () => {
@@ -187,11 +187,18 @@ const RoomDetail = () => {
                   </div>
                 </div>
                 
-                <div className="mt-6">
+                <div className="mt-6 space-y-2">
                   <Link to={`/patient/${patient.id}`}>
                     <Button variant="outline" className="w-full">
                       <FileText className="mr-2 h-4 w-4" />
                       Ver Ficha Completa
+                    </Button>
+                  </Link>
+                  
+                  <Link to={`/patient/${patient.id}/history`}>
+                    <Button variant="outline" className="w-full">
+                      <LineChart className="mr-2 h-4 w-4" />
+                      Histórico Completo de Medições
                     </Button>
                   </Link>
                 </div>
