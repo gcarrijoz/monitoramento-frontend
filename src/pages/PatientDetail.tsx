@@ -5,7 +5,8 @@ import Layout from '@/components/Layout';
 import { usePatients } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, Heart, Home } from 'lucide-react';
+import { ChevronLeft, Heart, Home, Edit } from 'lucide-react';
+import MeasurementHistory from '@/components/MeasurementHistory';
 
 const PatientDetail = () => {
   const { patientId } = useParams<{ patientId: string }>();
@@ -126,7 +127,7 @@ const PatientDetail = () => {
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-gray-500">Não alocado</span>
                         {availableRooms.length > 0 ? (
-                          <Link to={`/assign-patient-to-room/${patient.id}`}>
+                          <Link to={`/assign-patient/${patient.id}`}>
                             <Button variant="outline" size="sm">
                               Vincular a um quarto
                             </Button>
@@ -142,34 +143,27 @@ const PatientDetail = () => {
             </Card>
 
             <div className="mt-4">
-              <Button 
-                className="w-full bg-primary-blue hover:bg-primary-blue/90"
-                onClick={() => navigate(`/edit-patient/${patient.id}`)}
-              >
-                Editar Informações
-              </Button>
+              <Link to={`/edit-patient/${patient.id}`}>
+                <Button 
+                  className="w-full bg-primary-blue hover:bg-primary-blue/90"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar Informações
+                </Button>
+              </Link>
             </div>
           </div>
 
           {/* Right column - History and vitals */}
           <div className="md:col-span-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Histórico de Medições</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {patient.status !== 'empty' ? (
-                  <div className="flex justify-center items-center py-12">
-                    <div className="text-center">
-                      <p className="text-gray-500 mb-4">
-                        Histórico de medições ainda não implementado no MVP.
-                      </p>
-                      <p className="text-gray-500">
-                        Esta funcionalidade estará disponível em uma versão futura.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
+            {patient.status !== 'empty' ? (
+              <MeasurementHistory patient={patient} />
+            ) : (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>Histórico de Medições</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
                   <div className="flex justify-center items-center py-12">
                     <div className="text-center">
                       <p className="text-gray-500 mb-4">
@@ -180,9 +174,9 @@ const PatientDetail = () => {
                       </p>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
