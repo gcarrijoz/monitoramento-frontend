@@ -87,7 +87,18 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ patient }) => {
                   name="Frequência Cardíaca"
                   stroke="#3b82f6"
                   strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2, fill: (data: any) => getHeartRateColor(data.heartRate) }}
+                  dot={(data: any) => {
+                    return (
+                      <circle 
+                        r={4} 
+                        strokeWidth={2} 
+                        fill={getHeartRateColor(data.payload.heartRate)}
+                        stroke="#fff"
+                        cx={data.cx}
+                        cy={data.cy}
+                      />
+                    );
+                  }}
                   activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
                   isAnimationActive={true}
                 />

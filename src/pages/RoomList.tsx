@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { usePatients } from '@/contexts/PatientContext';
@@ -27,7 +26,6 @@ import {
   ChevronUp, 
   ChevronDown, 
   Filter,
-  Shower, 
   Bed, 
   AirVent, 
   WifiHigh,
@@ -291,7 +289,7 @@ const RoomList = () => {
                     </TableCell>
                     <TableCell>
                       {room.hasBathroom ? (
-                        <Shower className="h-4 w-4 text-teal-500" />
+                        <AirVent className="h-4 w-4 text-teal-500" />
                       ) : (
                         <span className="text-xs text-gray-400">Não</span>
                       )}
@@ -377,12 +375,12 @@ const RoomList = () => {
                 <div className="mt-1 flex items-center space-x-2 bg-gray-50 p-2 rounded-md">
                   {currentRoom.hasBathroom ? (
                     <>
-                      <Shower className="h-4 w-4 text-teal-500" />
+                      <AirVent className="h-4 w-4 text-teal-500" />
                       <span className="text-sm">Banheiro privativo</span>
                     </>
                   ) : (
                     <>
-                      <Shower className="h-4 w-4 text-gray-400" />
+                      <AirVent className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-400">Sem banheiro privativo</span>
                     </>
                   )}
