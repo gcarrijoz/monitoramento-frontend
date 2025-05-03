@@ -21,6 +21,7 @@ import AssignPatientToRoom from "./pages/AssignPatientToRoom";
 import EditPatient from "./pages/EditPatient";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/" element={<Login />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/patients" element={<PatientList />} />

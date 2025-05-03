@@ -1,18 +1,19 @@
-
+// src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { toast } from 'sonner';
+import api from '../services/api'; // Importando o arquivo da API
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'doctor' | 'nurse' | 'admin';
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -25,44 +26,42 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
 
-  // Mock user data (in a real app, this would come from an API)
-  const mockUsers = [
-    {
-      id: '1',
-      name: 'Dr. Maria Silva',
-      email: 'maria@hospital.com',
-      password: 'password123',
-      role: 'doctor' as const,
-    },
-    {
-      id: '2',
-      name: 'Enf. João Santos',
-      email: 'joao@hospital.com',
-      password: 'password123',
-      role: 'nurse' as const,
-    },
-  ];
-
   const login = async (email: string, password: string) => {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const foundUser = mockUsers.find(
-      (u) => u.email === email && u.password === password
-    );
-
-    if (foundUser) {
-      const { password, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      toast.success(`Bem-vindo(a), ${foundUser.name}!`);
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      console.log(response); // Verifique a resposta aqui
+      const { token, user } = response.data;
+  
+      // Armazenar o token no localStorage
+      localStorage.setItem('token', token);
+  
+      setUser(user);
+      toast.success(`Bem-vindo(a), ${user.name}!`);
       return true;
-    } else {
+    } catch (error) {
+      console.error(error); // Log do erro
       toast.error('E-mail ou senha inválidos');
       return false;
     }
   };
 
+  const register = async (name: string, email: string, password: string) => {
+    try {
+      const response = await api.post('/auth/register', { name, email, password });
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+
+      setUser(user);
+      toast.success(`Cadastro realizado! Bem-vindo(a), ${user.name}`);
+      return true;
+    } catch (error) {
+      toast.error('Erro ao cadastrar usuário');
+      return false;
+    }
+  };
+
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
     toast.info('Você saiu do sistema');
   };
@@ -73,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user,
         isAuthenticated: !!user,
         login,
+        register,
         logout,
       }}
     >

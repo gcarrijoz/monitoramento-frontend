@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,20 +7,21 @@ import { Label } from '@/components/ui/label';
 import Layout from '@/components/Layout';
 import { Heart } from 'lucide-react';
 
-const Login = () => {
+const Signup = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { login } = useAuth();
+
+  const { register } = useAuth(); // Função de Signup no AuthContext
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const success = await login(email, password);
+      const success = await register(name, email, password);
       if (success) {
         navigate('/dashboard');
       }
@@ -50,6 +50,19 @@ const Login = () => {
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Seu nome completo"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
                 <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
@@ -64,17 +77,12 @@ const Login = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <a href="#" className="text-sm text-primary-blue hover:underline">
-                    Esqueceu a senha?
-                  </a>
-                </div>
+                <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="********"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -89,20 +97,19 @@ const Login = () => {
                 className="w-full bg-primary-blue hover:bg-primary-blue/90"
                 disabled={loading}
               >
-                {loading ? 'Entrando...' : 'Entrar'}
+                {loading ? 'Cadastrando...' : 'Cadastrar'}
               </Button>
             </div>
-            
-            <div className="text-center text-sm text-gray-500">
+          </form>
+          <div className="text-center text-sm text-gray-500">
               <p className="mt-2">
-                Ainda não tem conta? <a href="/signup" className='text-blue-500'>Faça seu cadastro</a>
+                Já possui conta? <a href="/login" className='text-blue-500'>Faça login</a>
               </p>
             </div>
-          </form>
         </div>
       </div>
     </Layout>
   );
 };
 
-export default Login;
+export default Signup;
