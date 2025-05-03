@@ -14,6 +14,7 @@ import PatientList from "./pages/PatientList";
 import RegisterPatient from "./pages/RegisterPatient";
 import RoomDetail from "./pages/RoomDetail";
 import RoomList from "./pages/RoomList";
+import RoomManagement from "./pages/RoomManagement";
 import PatientDetail from "./pages/PatientDetail";
 import MeasurementHistoryPage from "./pages/MeasurementHistoryPage";
 import AssignPatient from "./pages/AssignPatient";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/patients" element={<PatientList />} />
               <Route path="/rooms" element={<RoomList />} />
+              <Route path="/room-management" element={<RoomManagement />} />
               <Route path="/register-patient" element={<RegisterPatient />} />
               <Route path="/room/:roomId" element={<RoomDetail />} />
               <Route path="/patient/:patientId" element={<PatientDetail />} />
