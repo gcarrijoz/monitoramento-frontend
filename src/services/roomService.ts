@@ -17,7 +17,7 @@ export interface Room {
 // Obter todos os quartos
 export const getAllRooms = async (): Promise<Room[]> => {
   try {
-    const response = await api.get('/rooms');
+    const response = await api.get('/room');
     return response.data;
   } catch (error) {
     console.error('Erro ao buscar quartos:', error);
@@ -28,7 +28,7 @@ export const getAllRooms = async (): Promise<Room[]> => {
 // Obter um quarto específico pelo ID
 export const getRoomById = async (id: number): Promise<Room> => {
   try {
-    const response = await api.get(`/rooms/${id}`);
+    const response = await api.get(`/room/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Erro ao buscar quarto com ID ${id}:`, error);
@@ -39,7 +39,7 @@ export const getRoomById = async (id: number): Promise<Room> => {
 // Criar um novo quarto
 export const createRoom = async (roomData: Room): Promise<Room> => {
   try {
-    const response = await api.post('/rooms', roomData);
+    const response = await api.post('/room', roomData);
     return response.data;
   } catch (error) {
     console.error('Erro ao criar quarto:', error);
@@ -50,7 +50,7 @@ export const createRoom = async (roomData: Room): Promise<Room> => {
 // Atualizar um quarto existente
 export const updateRoom = async (id: number, roomData: Partial<Room>): Promise<Room> => {
   try {
-    const response = await api.put(`/rooms/${id}`, roomData);
+    const response = await api.put(`/room/${id}`, roomData);
     return response.data;
   } catch (error) {
     console.error(`Erro ao atualizar quarto com ID ${id}:`, error);
@@ -61,7 +61,7 @@ export const updateRoom = async (id: number, roomData: Partial<Room>): Promise<R
 // Excluir um quarto
 export const deleteRoom = async (id: number): Promise<void> => {
   try {
-    await api.delete(`/rooms/${id}`);
+    await api.delete(`/room/${id}`);
   } catch (error) {
     console.error(`Erro ao excluir quarto com ID ${id}:`, error);
     throw error;
