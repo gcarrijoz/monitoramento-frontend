@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { usePatients } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Link } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -13,22 +13,51 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Heart, Edit } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash, 
+  Link as LinkIcon, 
+  Unlink 
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { format, differenceInYears } from 'date-fns';
+
+interface PatientData {
+  id: string;
+  name: string;
+  cpf: string;
+  gender: string;
+  dateOfBirth: Date | string;
+  minHeartRate?: number | null;
+  maxHeartRate?: number | null;
+  isActive: boolean;
+  roomNumber?: string | null;
+}
 
 const PatientList = () => {
-  const { patients } = usePatients();
+  const { patients, removePatient } = usePatients();
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const statusClasses = {
-    normal: 'text-status-normal',
-    warning: 'text-status-warning',
-    alert: 'text-status-alert',
-    urgent: 'text-status-urgent',
-    empty: 'text-gray-400',
+  const calculateAge = (dateOfBirth: Date | string): number => {
+    if (!dateOfBirth) return 0;
+    const birthDate = typeof dateOfBirth === 'string' 
+      ? new Date(dateOfBirth) 
+      : dateOfBirth;
+    return differenceInYears(new Date(), birthDate);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este paciente?')) {
+      removePatient(id);
+      toast.success('Paciente excluído com sucesso');
+    }
   };
 
   return (
@@ -40,7 +69,7 @@ const PatientList = () => {
             <p className="text-gray-500">Gerenciamento e visualização de todos os pacientes</p>
           </div>
           
-          <div className="mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 flex gap-2">
             <Link to="/register-patient">
               <Button className="bg-primary-blue hover:bg-primary-blue/90">
                 <Plus className="mr-2 h-4 w-4" />
@@ -70,9 +99,7 @@ const PatientList = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Idade</TableHead>
                   <TableHead>Quarto</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Freq. Cardíaca</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -80,52 +107,63 @@ const PatientList = () => {
                   filteredPatients.map((patient) => (
                     <TableRow key={patient.id}>
                       <TableCell className="font-medium">{patient.name}</TableCell>
-                      <TableCell>{patient.age} anos</TableCell>
+                      <TableCell>{calculateAge(patient.dateOfBirth || '')} anos</TableCell>
                       <TableCell>
                         {patient.roomNumber ? (
                           <Link 
                             to={`/room/${patient.roomNumber}`} 
-                            className="text-primary-blue hover:underline"
+                            className="text-primary-blue hover:underline flex items-center"
                           >
-                            {patient.roomNumber}
+                            <span>{patient.roomNumber}</span>
                           </Link>
                         ) : (
                           <span className="text-gray-400">Não alocado</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Heart 
-                            className={`h-4 w-4 mr-1.5 ${statusClasses[patient.status]} ${patient.status !== 'normal' && patient.status !== 'empty' ? 'animate-pulse' : ''}`}
-                            fill={patient.status !== 'empty' ? 'currentColor' : 'none'} 
-                          />
-                          <span className={statusClasses[patient.status]}>
-                            {patient.status === 'normal' ? 'Normal' :
-                             patient.status === 'warning' ? 'Atenção' :
-                             patient.status === 'alert' ? 'Alerta' :
-                             patient.status === 'urgent' ? 'Urgente' :
-                             'Não monitorado'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {patient.currentHeartRate ? `${patient.currentHeartRate} bpm` : '--'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Link to={`/patient/${patient.id}`}>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center space-x-2">
+                          <Link to={`/edit-patient/${patient.id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
+                          
+                          {patient.roomNumber ? (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => {
+                                // Lógica para desvincular o paciente do quarto
+                                toast.info('Funcionalidade de desvincular em desenvolvimento');
+                              }}
+                            >
+                              <Unlink className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Link to={`/assign-patient-to-room/${patient.id}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <LinkIcon className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          )}
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(patient.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-gray-500">
-                      Nenhum paciente encontrado para "{searchTerm}"
+                    <TableCell colSpan={4} className="text-center py-6 text-gray-500">
+                      {searchTerm ? `Nenhum paciente encontrado para "${searchTerm}"` : 'Nenhum paciente cadastrado'}
                     </TableCell>
                   </TableRow>
                 )}
