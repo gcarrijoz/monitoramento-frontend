@@ -29,11 +29,10 @@ interface PatientData {
   name: string;
   cpf: string;
   gender: string;
-  dateOfBirth: Date | string;
+  birthDate: string;
   minHeartRate?: number | null;
   maxHeartRate?: number | null;
-  isActive: boolean;
-  roomNumber?: string | null;
+  roomNumber?: number | null;
 }
 
 const PatientList = () => {
@@ -52,9 +51,8 @@ const PatientList = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este paciente?')) {
-      // Since removePatient doesn't exist, we'll use updatePatient to set isActive to false
-      // This is a soft delete approach
-      updatePatient(id, { isActive: false });
+      // Using status to implement a soft delete approach
+      updatePatient(id, { status: 'empty' });
       toast.success('Paciente excluído com sucesso');
     }
   };
