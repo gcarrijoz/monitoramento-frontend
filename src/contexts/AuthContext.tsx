@@ -28,7 +28,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/signin', { email, password });
       console.log(response); // Verifique a resposta aqui
       const { token, user } = response.data;
   
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       toast.success(`Bem-vindo(a), ${user.name}!`);
       return true;
     } catch (error) {
-      console.error(error); // Log do erro
+      console.error('Erro no login:', error.response?.data || error.message); // Log do erro
       toast.error('E-mail ou senha inválidos');
       return false;
     }
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const response = await api.post('/auth/register', { name, email, password });
+      const response = await api.post('/auth/signup', { name, email, password });
       const { token, user } = response.data;
       localStorage.setItem('token', token);
 
