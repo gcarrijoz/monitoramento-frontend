@@ -37,7 +37,7 @@ interface PatientData {
 }
 
 const PatientList = () => {
-  const { patients, removePatient } = usePatients();
+  const { patients, updatePatient } = usePatients();
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
@@ -45,17 +45,16 @@ const PatientList = () => {
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const calculateAge = (dateOfBirth: Date | string): number => {
-    if (!dateOfBirth) return 0;
-    const birthDate = typeof dateOfBirth === 'string' 
-      ? new Date(dateOfBirth) 
-      : dateOfBirth;
-    return differenceInYears(new Date(), birthDate);
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0;
+    return differenceInYears(new Date(), new Date(birthDate));
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este paciente?')) {
-      removePatient(id);
+      // Since removePatient doesn't exist, we'll use updatePatient to set isActive to false
+      // This is a soft delete approach
+      updatePatient(id, { isActive: false });
       toast.success('Paciente excluído com sucesso');
     }
   };
@@ -107,7 +106,7 @@ const PatientList = () => {
                   filteredPatients.map((patient) => (
                     <TableRow key={patient.id}>
                       <TableCell className="font-medium">{patient.name}</TableCell>
-                      <TableCell>{calculateAge(patient.dateOfBirth || '')} anos</TableCell>
+                      <TableCell>{calculateAge(patient.birthDate)} anos</TableCell>
                       <TableCell>
                         {patient.roomNumber ? (
                           <Link 
