@@ -67,3 +67,14 @@ export const deleteRoom = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
+// Obter quartos disponíveis
+export const getAvailableRooms = async (): Promise<Room[]> => {
+  try {
+    const response = await api.get('/room/available');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar quartos disponíveis:', error);
+    throw error;
+  }
+};

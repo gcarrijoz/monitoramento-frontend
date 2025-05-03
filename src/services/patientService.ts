@@ -1,3 +1,4 @@
+
 import api from './api';
 
 export interface Patient {
@@ -64,6 +65,39 @@ export const deletePatient = async (id: string): Promise<void> => {
     await api.delete(`/patient/${id}`);
   } catch (error) {
     console.error(`Erro ao excluir paciente com ID ${id}:`, error);
+    throw error;
+  }
+};
+
+// Obter pacientes sem quarto atribuído
+export const getUnassignedPatients = async (): Promise<Patient[]> => {
+  try {
+    const response = await api.get('/patient/unassigned');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar pacientes sem quarto:', error);
+    throw error;
+  }
+};
+
+// Atribuir paciente a um quarto
+export const assignPatientToRoom = async (patientId: string, roomId: number): Promise<Patient> => {
+  try {
+    const response = await api.post(`/patient/${patientId}/assign`, { roomId });
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao atribuir paciente ${patientId} ao quarto ${roomId}:`, error);
+    throw error;
+  }
+};
+
+// Remover paciente de um quarto
+export const unassignPatient = async (patientId: string): Promise<Patient> => {
+  try {
+    const response = await api.post(`/patient/${patientId}/unassign`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao desvincular paciente ${patientId} do quarto:`, error);
     throw error;
   }
 };

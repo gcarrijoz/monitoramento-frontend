@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -9,8 +10,11 @@ import {
   createPatient,
   updatePatient,
   deletePatient,
-  Patient
+  Patient,
+  assignPatientToRoom,
+  unassignPatient
 } from '@/services/patientService';
+import { getAvailableRooms, Room } from '@/services/roomService';
 import { toast } from 'sonner';
 import { differenceInYears } from 'date-fns';
 
@@ -59,6 +63,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2, Link as LinkIcon, Unlink } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Schema de validação para o formulário
 const patientSchema = z.object({
@@ -80,6 +91,13 @@ const PatientList = () => {
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [assignRoomDialogOpen, setAssignRoomDialogOpen] = useState<boolean>(false);
+  const [unassignDialogOpen, setUnassignDialogOpen] = useState<boolean>(false);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [patientToAssign, setPatientToAssign] = useState<Patient | null>(null);
+  const [patientToUnassign, setPatientToUnassign] = useState<Patient | null>(null);
+  const [loadingRooms, setLoadingRooms] = useState<boolean>(false);
   
   const navigate = useNavigate();
   
@@ -106,6 +124,20 @@ const PatientList = () => {
       console.error('Erro ao carregar pacientes:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Carregar quartos disponíveis
+  const loadAvailableRooms = async () => {
+    try {
+      setLoadingRooms(true);
+      const rooms = await getAvailableRooms();
+      setAvailableRooms(rooms);
+    } catch (error) {
+      toast.error('Erro ao carregar quartos disponíveis');
+      console.error('Erro ao carregar quartos disponíveis:', error);
+    } finally {
+      setLoadingRooms(false);
     }
   };
 
@@ -203,6 +235,54 @@ const PatientList = () => {
     }
   };
 
+  // Abrir modal para atribuir quarto
+  const openAssignRoomModal = (patient: Patient) => {
+    setPatientToAssign(patient);
+    loadAvailableRooms();
+    setAssignRoomDialogOpen(true);
+  };
+
+  // Atribuir paciente a quarto
+  const handleAssignRoom = async () => {
+    if (!patientToAssign?.id || !selectedRoomId) return;
+    
+    try {
+      await assignPatientToRoom(patientToAssign.id, selectedRoomId);
+      toast.success(`Paciente atribuído ao quarto ${selectedRoomId} com sucesso!`);
+      loadPatients();
+    } catch (error) {
+      toast.error('Erro ao atribuir paciente ao quarto');
+      console.error('Erro ao atribuir paciente ao quarto:', error);
+    } finally {
+      setAssignRoomDialogOpen(false);
+      setPatientToAssign(null);
+      setSelectedRoomId(null);
+    }
+  };
+
+  // Confirmar desvinculação de quarto
+  const confirmUnassign = (patient: Patient) => {
+    setPatientToUnassign(patient);
+    setUnassignDialogOpen(true);
+  };
+
+  // Desvincular paciente do quarto
+  const handleUnassignPatient = async () => {
+    if (!patientToUnassign?.id) return;
+    
+    try {
+      await unassignPatient(patientToUnassign.id);
+      toast.success('Paciente desvinculado do quarto com sucesso!');
+      loadPatients();
+    } catch (error) {
+      toast.error('Erro ao desvincular paciente do quarto');
+      console.error('Erro ao desvincular paciente do quarto:', error);
+    } finally {
+      setUnassignDialogOpen(false);
+      setPatientToUnassign(null);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6">
@@ -278,10 +358,7 @@ const PatientList = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => {
-                                  // Lógica para desvincular o paciente do quarto
-                                  toast.info('Funcionalidade de desvincular em desenvolvimento');
-                                }}
+                                onClick={() => confirmUnassign(patient)}
                               >
                                 <Unlink className="h-4 w-4" />
                               </Button>
@@ -289,7 +366,7 @@ const PatientList = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => navigate(`/assign-patient-to-room/${patient.id}`)}
+                                onClick={() => openAssignRoomModal(patient)}
                               >
                                 <LinkIcon className="h-4 w-4" />
                               </Button>
@@ -466,6 +543,84 @@ const PatientList = () => {
                 className="bg-red-600 hover:bg-red-700"
               >
                 Sim, excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        
+        {/* Modal para atribuir paciente a um quarto */}
+        <Dialog open={assignRoomDialogOpen} onOpenChange={setAssignRoomDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                Atribuir Paciente a um Quarto
+              </DialogTitle>
+              <DialogDescription>
+                Selecione um quarto disponível para o paciente {patientToAssign?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-2">
+              {loadingRooms ? (
+                <div className="text-center py-4">Carregando quartos disponíveis...</div>
+              ) : availableRooms.length === 0 ? (
+                <div className="text-center py-4">Não há quartos disponíveis.</div>
+              ) : (
+                <div className="space-y-2">
+                  <FormItem>
+                    <FormLabel>Quarto</FormLabel>
+                    <Select onValueChange={(value) => setSelectedRoomId(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um quarto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableRooms.map((room) => (
+                          <SelectItem key={room.id} value={String(room.id)}>
+                            Quarto {room.number} (Setor {room.sector}, Andar {room.floor})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setAssignRoomDialogOpen(false);
+                  setPatientToAssign(null);
+                  setSelectedRoomId(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAssignRoom} 
+                disabled={!selectedRoomId || loadingRooms}
+              >
+                Atribuir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Diálogo de confirmação para desvincular paciente do quarto */}
+        <AlertDialog open={unassignDialogOpen} onOpenChange={setUnassignDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desvincular paciente do quarto</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja desvincular o paciente {patientToUnassign?.name} do quarto {patientToUnassign?.roomId}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleUnassignPatient}>
+                Sim, desvincular
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
