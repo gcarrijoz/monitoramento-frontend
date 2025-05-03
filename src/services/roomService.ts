@@ -1,6 +1,13 @@
 
+import { PatientStatus } from '@/contexts/PatientContext';
 import api from './api';
 
+export interface Patient {
+  id: number;
+  name: string;
+  currentHeartRate?: number;
+  status?: PatientStatus;
+}
 export interface Room {
   id?: number;
   sector: string;
@@ -12,6 +19,7 @@ export interface Room {
   devices?: any[];
   roomHistory?: any[];
   alerts?: any[];
+  patient?: Patient | null;
 }
 
 // Obter todos os quartos
@@ -87,4 +95,9 @@ export const unassignPatientFromRoom = async (roomId: number): Promise<void> => 
     console.error(`Erro ao desvincular paciente do quarto ${roomId}:`, error);
     throw error;
   }
+};
+
+export const getRoomsWithPatients = async (): Promise<Room[]> => {
+  const response = await api.get('/rooms/with-patients');
+  return response.data;
 };

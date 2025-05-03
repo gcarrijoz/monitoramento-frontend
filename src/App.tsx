@@ -12,7 +12,6 @@ import { DeviceProvider } from "./contexts/DeviceContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import PatientList from "./pages/PatientList";
-import RegisterPatient from "./pages/RegisterPatient";
 import RoomDetail from "./pages/RoomDetail";
 import RoomList from "./pages/RoomList";
 import PatientDetail from "./pages/PatientDetail";
@@ -44,7 +43,6 @@ const App = () => (
                 <Route path="/patients" element={<PatientList />} />
                 <Route path="/rooms" element={<RoomList />} />
                 <Route path="/devices" element={<DeviceList />} />
-                <Route path="/register-patient" element={<RegisterPatient />} />
                 <Route path="/room/:roomId" element={<RoomDetail />} />
                 <Route path="/patient/:patientId" element={<PatientDetail />} />
                 <Route path="/patient/:patientId/history" element={<MeasurementHistoryPage />} />

@@ -1,8 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { useDevices, Device } from '@/contexts/DeviceContext';
-import { usePatients } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,16 +18,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Link as LinkIcon, Unlink, Cpu } from 'lucide-react';
 import {
   AlertDialog,
@@ -41,38 +31,64 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
+import {
+  Device,
+  getAllDevices,
+  createDevice,
+  updateDevice,
+  deleteDevice,
+  assignDeviceToRoom,
+  unassignDevice,
+  getAllDevicesWithRooms
+} from '@/services/deviceService';
+import { Room, getAllRooms } from '@/services/roomService';
+import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
 
 const DeviceList = () => {
-  // Context and state
-  const { devices, addDevice, updateDevice, deleteDevice, assignDeviceToRoom, unassignDevice } = useDevices();
-  const { rooms } = usePatients();
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
+  const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
+  const [deviceToAssign, setDeviceToAssign] = useState<Device | null>(null);
 
-  // Form state
   const [formData, setFormData] = useState({
     macAddress: '',
     description: '',
     isActive: true,
   });
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
-  
-  // Filtered devices based on search term
+  // Carregar dispositivos e quartos
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [devicesData, roomsData] = await Promise.all([
+          getAllDevicesWithRooms(),
+          getAllRooms()
+        ]);
+        setDevices(devicesData);
+        setRooms(roomsData);
+      } catch (error) {
+        toast.error('Erro ao carregar dados');
+        console.error('Erro:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   const filteredDevices = devices.filter(device =>
     device.macAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (device.description && device.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Available rooms (not already assigned)
-  const availableRooms = rooms.filter(room => room.active);
-  
-  // Reset form
   const resetForm = () => {
     setFormData({
       macAddress: '',
@@ -82,13 +98,11 @@ const DeviceList = () => {
     setCurrentDevice(null);
   };
 
-  // Open dialog for new device
   const openNewDeviceDialog = () => {
     resetForm();
     setIsDialogOpen(true);
   };
 
-  // Open dialog to edit device
   const openEditDeviceDialog = (device: Device) => {
     setCurrentDevice(device);
     setFormData({
@@ -99,78 +113,105 @@ const DeviceList = () => {
     setIsDialogOpen(true);
   };
 
-  // Open dialog to assign device to room
-  const openAssignDialog = (device: Device) => {
-    setCurrentDevice(device);
-    setSelectedRoomId('');
-    setIsAssignDialogOpen(true);
+  const openRoomsModal = (device: Device) => {
+    setDeviceToAssign(device);
+    setRoomsDialogOpen(true);
   };
 
-  // Handle form change
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Handle checkbox change
   const handleCheckboxChange = (checked: boolean) => {
     setFormData({ ...formData, isActive: checked });
   };
 
-  // Handle form submission
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate MAC address
     const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
     if (!macRegex.test(formData.macAddress)) {
       toast.error('O endereço MAC deve estar no formato XX:XX:XX:XX:XX:XX');
       return;
     }
     
-    if (currentDevice) {
-      // Update device
-      updateDevice(currentDevice.id, {
-        macAddress: formData.macAddress,
-        description: formData.description,
-        isActive: formData.isActive,
-      });
-    } else {
-      // Create new device
-      addDevice({
-        macAddress: formData.macAddress,
-        description: formData.description,
-        isActive: formData.isActive,
-      });
+    try {
+      if (currentDevice) {
+        const updatedDevice = await updateDevice(currentDevice.id, {
+          macAddress: formData.macAddress,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
+        setDevices(devices.map(d => d.id === currentDevice.id ? updatedDevice : d));
+      } else {
+        const newDevice = await createDevice({
+          macAddress: formData.macAddress,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
+        setDevices([...devices, newDevice]);
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+      toast.success('Dispositivo salvo com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao salvar dispositivo');
+      console.error('Erro:', error);
     }
+  };
+
+  const handleAssignToRoom = async (roomId: number) => {
+    if (!deviceToAssign) return;
     
-    setIsDialogOpen(false);
-    resetForm();
-  };
-
-  // Handle device assignment
-  const handleAssignDevice = () => {
-    if (currentDevice && selectedRoomId) {
-      assignDeviceToRoom(currentDevice.id, parseInt(selectedRoomId));
-      setIsAssignDialogOpen(false);
-      setCurrentDevice(null);
-      setSelectedRoomId('');
-    } else {
-      toast.error('Selecione um quarto para vincular o dispositivo');
+    try {
+      await assignDeviceToRoom(deviceToAssign.id, roomId);
+      // Atualizar lista de dispositivos
+      const updatedDevices = await getAllDevicesWithRooms();
+      setDevices(updatedDevices);
+      
+      toast.success(`Dispositivo vinculado ao quarto ${roomId} com sucesso!`);
+      setRoomsDialogOpen(false);
+      setDeviceToAssign(null);
+    } catch (error) {
+      toast.error('Erro ao vincular dispositivo ao quarto');
+      console.error('Erro:', error);
     }
   };
 
-  // Handle device unassignment
-  const handleUnassignDevice = (deviceId: number) => {
-    unassignDevice(deviceId);
+  const handleUnassignDevice = async (deviceId: number) => {
+    try {
+      await unassignDevice(deviceId);
+      // Atualizar lista de dispositivos
+      const updatedDevices = await getAllDevicesWithRooms();
+      setDevices(updatedDevices);
+      
+      toast.success('Dispositivo desvinculado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao desvincular dispositivo');
+      console.error('Erro:', error);
+    }
   };
 
-  // Get room number for a device
+  const handleDeleteDevice = async (deviceId: number) => {
+    try {
+      await deleteDevice(deviceId);
+      setDevices(devices.filter(d => d.id !== deviceId));
+      toast.success('Dispositivo excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir dispositivo');
+      console.error('Erro:', error);
+    }
+  };
+
   const getRoomNumber = (roomId?: number | null) => {
     if (!roomId) return null;
-    const room = rooms.find(r => r.number === roomId);
+    const room = rooms.find(r => r.id === roomId);
     return room ? room.number : null;
   };
+
+
 
   return (
     <Layout>
@@ -192,7 +233,6 @@ const DeviceList = () => {
           </div>
         </div>
 
-        {/* Search and filters */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-100">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -207,122 +247,121 @@ const DeviceList = () => {
           </div>
         </div>
         
-        {/* Devices Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-1">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Endereço MAC</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Quarto</TableHead>
-                  <TableHead className="w-[100px] text-center">Status</TableHead>
-                  <TableHead className="w-[200px]">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDevices.length > 0 ? (
-                  filteredDevices.map((device) => (
-                    <TableRow key={device.id}>
-                      <TableCell className="font-mono">{device.macAddress}</TableCell>
-                      <TableCell>{device.description || '-'}</TableCell>
-                      <TableCell>
-                        {device.roomId ? (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                            Quarto {getRoomNumber(device.roomId)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {device.isActive ? (
-                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                            Ativo
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                            Inativo
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditDeviceDialog(device)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-1">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">Endereço MAC</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Quarto</TableHead>
+                    <TableHead className="w-[100px] text-center">Status</TableHead>
+                    <TableHead className="w-[200px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDevices.length > 0 ? (
+                    filteredDevices.map((device) => (
+                      <TableRow key={device.id}>
+                        <TableCell className="font-mono">{device.macAddress}</TableCell>
+                        <TableCell>{device.description || '-'}</TableCell>
+                        <TableCell>
                           {device.roomId ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUnassignDevice(device.id)}
-                            >
-                              <Unlink className="h-4 w-4" />
-                            </Button>
+                            <span className="text-primary-blue">
+                            <strong>Setor:</strong> {device.room.sector} | <strong>Andar:</strong> {device.room.floor} | <strong>Número:</strong> {device.room.number}
+                          </span>
                           ) : (
+                            <span className="text-gray-400">Não vinculado</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={device.isActive ? "default" : "destructive"}>
+                            {device.isActive ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => openAssignDialog(device)}
-                              disabled={!device.isActive}
+                              onClick={() => openEditDeviceDialog(device)}
                             >
-                              <LinkIcon className="h-4 w-4" />
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          )}
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                            
+                            {device.roomId ? (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-500 border-red-200 hover:bg-red-50"
+                                onClick={() => handleUnassignDevice(device.id)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Unlink className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja excluir o dispositivo {device.macAddress}?
-                                  {device.roomId && (
-                                    <p className="mt-2 text-red-500">
-                                      Atenção: Este dispositivo está vinculado ao Quarto {getRoomNumber(device.roomId)}.
-                                    </p>
-                                  )}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteDevice(device.id)}
-                                  className="bg-red-500 hover:bg-red-600"
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openRoomsModal(device)}
+                                disabled={!device.isActive}
+                              >
+                                <LinkIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-500 border-red-200 hover:bg-red-50"
                                 >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir o dispositivo {device.macAddress}?
+                                    {device.roomId && (
+                                      <p className="mt-2 text-red-500">
+                                        Atenção: Este dispositivo está vinculado ao Quarto {getRoomNumber(device.roomId)}.
+                                      </p>
+                                    )}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteDevice(device.id)}
+                                    className="bg-red-500 hover:bg-red-600"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        Nenhum dispositivo encontrado
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      Nenhum dispositivo encontrado
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Add/Edit Device Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -393,55 +432,73 @@ const DeviceList = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Assign Device to Room Dialog */}
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-          <DialogContent>
+        {/* Rooms Assignment Dialog */}
+        <Dialog open={roomsDialogOpen} onOpenChange={setRoomsDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Vincular Dispositivo ao Quarto</DialogTitle>
+              <DialogTitle>
+                {deviceToAssign && (
+                  <div className="flex items-center gap-2">
+                    <span>Vincular dispositivo:</span>
+                    <Badge variant="outline">
+                      <Cpu className="h-4 w-4 mr-2" />
+                      {deviceToAssign.macAddress}
+                    </Badge>
+                  </div>
+                )}
+              </DialogTitle>
               <DialogDescription>
-                Selecione um quarto para vincular o dispositivo {currentDevice?.macAddress}.
+                Selecione um quarto para vincular o dispositivo
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="roomSelect">Selecione o Quarto</Label>
-                <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
-                  <SelectTrigger id="roomSelect">
-                    <SelectValue placeholder="Selecione um quarto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRooms.map(room => (
-                      <SelectItem key={room.number} value={room.number.toString()}>
-                        Quarto {room.number} - {room.sector}
-                      </SelectItem>
+            <div className="py-4">
+              <div className="border rounded-md max-h-[400px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Andar</TableHead>
+                      <TableHead>Número</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rooms.map((room) => (
+                      <TableRow key={room.id} className="hover:bg-gray-50">
+                        <TableCell>{room.sector}</TableCell>
+                        <TableCell>{room.floor}º</TableCell>
+                        <TableCell>Quarto {room.number}</TableCell>
+                        <TableCell>
+                          <Badge variant={room.isAvailable ? "default" : "destructive"}>
+                            {room.isAvailable ? "Disponível" : "Ocupado"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            onClick={() => handleAssignToRoom(room.id)}
+                            disabled={!room.isAvailable}
+                          >
+                            Vincular
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="pt-2 text-sm text-amber-600">
-                <div className="flex items-start">
-                  <Cpu className="h-4 w-4 mr-2 mt-0.5" />
-                  <p>
-                    Ao vincular este dispositivo a um quarto, qualquer outro dispositivo já vinculado
-                    ao mesmo quarto será automaticamente desvinculado.
-                  </p>
-                </div>
+                  </TableBody>
+                </Table>
               </div>
             </div>
             
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={handleAssignDevice}
-                className="bg-primary-blue hover:bg-primary-blue/90"
-                disabled={!selectedRoomId}
+              <Button 
+                onClick={() => {
+                  setRoomsDialogOpen(false);
+                  setDeviceToAssign(null);
+                }}
               >
-                Vincular
+                Fechar
               </Button>
             </DialogFooter>
           </DialogContent>
