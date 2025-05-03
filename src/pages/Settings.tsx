@@ -187,9 +187,9 @@ const Settings = () => {
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border">
                 <h3 className="font-medium mb-1">Usuário Atual</h3>
                 <p className="text-sm text-gray-500">
-                  {user?.name} ({user?.role === 'doctor' ? 'Médico' : 'Enfermeiro'})
+                  {user?.name || 'Usuário'}
                 </p>
-                <p className="text-sm text-gray-500">{user?.email}</p>
+                <p className="text-sm text-gray-500">{user?.email || 'Email não disponível'}</p>
               </div>
             </CardContent>
           </Card>
