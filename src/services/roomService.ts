@@ -78,3 +78,13 @@ export const getAvailableRooms = async (): Promise<Room[]> => {
     throw error;
   }
 };
+
+
+export const unassignPatientFromRoom = async (roomId: number): Promise<void> => {
+  try {
+    await api.put(`/room-history/exit/room/${roomId}`);
+  } catch (error) {
+    console.error(`Erro ao desvincular paciente do quarto ${roomId}:`, error);
+    throw error;
+  }
+};

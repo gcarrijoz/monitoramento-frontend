@@ -53,18 +53,6 @@ const Settings = () => {
                     </div>
                   </div>
                 </div>
-                
-                <div>
-                  <h3 className="font-medium mb-2">Sensibilidade de Alertas</h3>
-                  <select
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    defaultValue="medium"
-                  >
-                    <option value="low">Baixa (menos alertas)</option>
-                    <option value="medium">Média (padrão)</option>
-                    <option value="high">Alta (mais alertas)</option>
-                  </select>
-                </div>
               </div>
               
               <div className="mt-6">

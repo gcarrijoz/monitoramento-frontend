@@ -1,6 +1,12 @@
 
 import api from './api';
 
+export interface Room {
+  sector: string;
+  floor: number;
+  number: string;
+}
+
 export interface Patient {
   id?: string;
   name: string;
@@ -13,12 +19,24 @@ export interface Patient {
   status?: string;
   createdAt?: string;
   updatedAt?: string;
+  room?: Room | null;
 }
+
 
 // Obter todos os pacientes
 export const getAllPatients = async (): Promise<Patient[]> => {
   try {
     const response = await api.get('/patient');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar pacientes:', error);
+    throw error;
+  }
+};
+
+export const getAllPatientsWithRooms = async (): Promise<Patient[]> => {
+  try {
+    const response = await api.get('/patient/with-rooms');
     return response.data;
   } catch (error) {
     console.error('Erro ao buscar pacientes:', error);
@@ -80,24 +98,28 @@ export const getUnassignedPatients = async (): Promise<Patient[]> => {
   }
 };
 
-// Atribuir paciente a um quarto
-export const assignPatientToRoom = async (patientId: string, roomId: number): Promise<Patient> => {
-  try {
-    const response = await api.post(`/patient/${patientId}/assign`, { roomId });
-    return response.data;
-  } catch (error) {
-    console.error(`Erro ao atribuir paciente ${patientId} ao quarto ${roomId}:`, error);
-    throw error;
-  }
-};
 
 // Remover paciente de um quarto
 export const unassignPatient = async (patientId: string): Promise<Patient> => {
   try {
-    const response = await api.post(`/patient/${patientId}/unassign`);
+    const response = await api.put(`/room-history/exit/patient/${patientId}`);
     return response.data;
   } catch (error) {
     console.error(`Erro ao desvincular paciente ${patientId} do quarto:`, error);
     throw error;
   }
 };
+
+
+  export const assignPatientToRoom = async (patientId: string, roomId: number): Promise<void> => {
+    try {
+      await api.post('/room-history', {
+        roomId,
+        patientId
+      });
+    } catch (error) {
+      console.error('Erro ao atribuir paciente ao quarto:', error);
+      throw error;
+    }
+  };
+

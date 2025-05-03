@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -10,12 +9,12 @@ import {
   createRoom, 
   updateRoom, 
   deleteRoom,
-  Room 
+  Room,
+  unassignPatientFromRoom
 } from '@/services/roomService';
 import {
   getUnassignedPatients,
   assignPatientToRoom,
-  unassignPatient,
   Patient
 } from '@/services/patientService';
 import { toast } from 'sonner';
@@ -74,7 +73,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Schema de validação para o formulário
 const roomSchema = z.object({
   sector: z.string().min(1, "O setor é obrigatório"),
   floor: z.number().min(0, "O andar deve ser maior ou igual a 0"),
@@ -96,7 +94,6 @@ const RoomList = () => {
   const [unassignPatientDialogOpen, setUnassignPatientDialogOpen] = useState<boolean>(false);
   const [currentRoomForPatient, setCurrentRoomForPatient] = useState<Room | null>(null);
   const [unassignPatientRoomId, setUnassignPatientRoomId] = useState<number | null>(null);
-  const [unassignPatientId, setUnassignPatientId] = useState<string | null>(null);
   const [unassignedPatients, setUnassignedPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [loadingPatients, setLoadingPatients] = useState<boolean>(false);
@@ -113,7 +110,6 @@ const RoomList = () => {
     },
   });
   
-  // Carregar quartos
   const loadRooms = async () => {
     try {
       setIsLoading(true);
@@ -127,7 +123,6 @@ const RoomList = () => {
     }
   };
   
-  // Carregar pacientes sem quarto atribuído
   const loadUnassignedPatients = async () => {
     try {
       setLoadingPatients(true);
@@ -140,19 +135,17 @@ const RoomList = () => {
       setLoadingPatients(false);
     }
   };
-  
+
   useEffect(() => {
     loadRooms();
   }, []);
   
-  // Filtrar quartos baseado na pesquisa
   const filteredRooms = rooms.filter(
     (room) =>
       room.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.sector.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Abrir formulário para criar/editar
   const openRoomForm = (room?: Room) => {
     if (room) {
       setCurrentRoom(room);
@@ -174,15 +167,12 @@ const RoomList = () => {
     setDialogOpen(true);
   };
   
-  // Enviar formulário
   const onSubmit = async (values: RoomFormValues) => {
     try {
       if (currentRoom?.id) {
-        // Atualizar quarto existente
         await updateRoom(currentRoom.id, values);
         toast.success('Quarto atualizado com sucesso!');
       } else {
-        // Criar novo quarto - garantindo que todos os campos necessários estão presentes
         const newRoom: Room = {
           sector: values.sector,
           floor: values.floor,
@@ -195,7 +185,6 @@ const RoomList = () => {
       setDialogOpen(false);
       loadRooms();
     } catch (error: any) {
-      // Verificar se é um erro de validação (conflito de chave única)
       if (error.response?.status === 409) {
         toast.error('Já existe um quarto com este número no mesmo andar e setor.');
       } else {
@@ -205,13 +194,11 @@ const RoomList = () => {
     }
   };
   
-  // Confirmar exclusão de quarto
   const confirmDelete = (room: Room) => {
     setRoomToDelete(room);
     setDeleteDialogOpen(true);
   };
   
-  // Excluir quarto
   const handleDelete = async () => {
     if (!roomToDelete?.id) return;
     
@@ -228,14 +215,12 @@ const RoomList = () => {
     }
   };
 
-  // Abrir modal para atribuir paciente ao quarto
   const openAssignPatientModal = (room: Room) => {
     setCurrentRoomForPatient(room);
     loadUnassignedPatients();
     setAssignPatientDialogOpen(true);
   };
 
-  // Atribuir paciente ao quarto
   const handleAssignPatient = async () => {
     if (!currentRoomForPatient?.id || !selectedPatientId) return;
     
@@ -253,19 +238,16 @@ const RoomList = () => {
     }
   };
 
-  // Abrir diálogo de confirmação para desvincular paciente
-  const confirmUnassignPatient = (roomId: number, patientId: string) => {
+  const confirmUnassignPatient = (roomId: number) => {
     setUnassignPatientRoomId(roomId);
-    setUnassignPatientId(patientId);
     setUnassignPatientDialogOpen(true);
   };
 
-  // Desvincular paciente do quarto
   const handleUnassignPatient = async () => {
-    if (!unassignPatientId) return;
+    if (!unassignPatientRoomId) return;
     
     try {
-      await unassignPatient(unassignPatientId);
+      await unassignPatientFromRoom(unassignPatientRoomId);
       toast.success('Paciente desvinculado do quarto com sucesso!');
       loadRooms();
     } catch (error) {
@@ -274,7 +256,6 @@ const RoomList = () => {
     } finally {
       setUnassignPatientDialogOpen(false);
       setUnassignPatientRoomId(null);
-      setUnassignPatientId(null);
     }
   };
 
@@ -295,7 +276,6 @@ const RoomList = () => {
           </div>
         </div>
         
-        {/* Filtro de busca */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -308,7 +288,6 @@ const RoomList = () => {
           </div>
         </div>
         
-        {/* Tabela de quartos */}
         <Card>
           <CardHeader>
             <CardTitle>Quartos</CardTitle>
@@ -346,13 +325,6 @@ const RoomList = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/room/${room.id}`)}
-                            >
-                              <Bed className="h-4 w-4" />
-                            </Button>
                             {room.isAvailable ? (
                               <Button
                                 variant="outline"
@@ -367,12 +339,7 @@ const RoomList = () => {
                                 variant="outline"
                                 size="sm"
                                 className="text-orange-600"
-                                onClick={() => {
-                                  // Aqui assumimos que um room.patientId existiria
-                                  // Como não temos essa informação, usamos uma string temporária
-                                  const dummyPatientId = "temp";
-                                  confirmUnassignPatient(room.id || 0, dummyPatientId);
-                                }}
+                                onClick={() => confirmUnassignPatient(room.id || 0)}
                               >
                                 <UserX className="h-4 w-4" />
                               </Button>
@@ -383,14 +350,6 @@ const RoomList = () => {
                               onClick={() => openRoomForm(room)}
                             >
                               <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => confirmDelete(room)}
-                            >
-                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -411,7 +370,6 @@ const RoomList = () => {
           </CardContent>
         </Card>
         
-        {/* Modal de criação/edição de quarto */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -516,7 +474,6 @@ const RoomList = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Diálogo de confirmação de exclusão */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -535,7 +492,7 @@ const RoomList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Modal para atribuir paciente ao quarto */}
+        {/* Modal para atribuição de paciente - Versão corrigida */}
         <Dialog open={assignPatientDialogOpen} onOpenChange={setAssignPatientDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -553,9 +510,11 @@ const RoomList = () => {
               ) : unassignedPatients.length === 0 ? (
                 <div className="text-center py-4">Não há pacientes sem quartos atribuídos.</div>
               ) : (
-                <div className="space-y-2">
-                  <FormItem>
-                    <FormLabel>Paciente</FormLabel>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Paciente
+                    </label>
                     <Select onValueChange={(value) => setSelectedPatientId(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um paciente" />
@@ -568,14 +527,13 @@ const RoomList = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </FormItem>
+                  </div>
                 </div>
               )}
             </div>
             
             <DialogFooter>
               <Button 
-                type="button" 
                 variant="outline" 
                 onClick={() => {
                   setAssignPatientDialogOpen(false);
@@ -595,7 +553,6 @@ const RoomList = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Diálogo de confirmação para desvincular paciente */}
         <AlertDialog open={unassignPatientDialogOpen} onOpenChange={setUnassignPatientDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>

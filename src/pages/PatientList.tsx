@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -12,7 +11,8 @@ import {
   deletePatient,
   Patient,
   assignPatientToRoom,
-  unassignPatient
+  unassignPatient,
+  getAllPatientsWithRooms
 } from '@/services/patientService';
 import { getAvailableRooms, Room } from '@/services/roomService';
 import { toast } from 'sonner';
@@ -62,7 +62,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash2, Link as LinkIcon, Unlink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Search, Edit, Trash2, Link as LinkIcon, Unlink, User, Bed } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -71,7 +72,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Schema de validação para o formulário
 const patientSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
   cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
@@ -91,13 +91,13 @@ const PatientList = () => {
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
-  const [assignRoomDialogOpen, setAssignRoomDialogOpen] = useState<boolean>(false);
   const [unassignDialogOpen, setUnassignDialogOpen] = useState<boolean>(false);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [patientToAssign, setPatientToAssign] = useState<Patient | null>(null);
   const [patientToUnassign, setPatientToUnassign] = useState<Patient | null>(null);
   const [loadingRooms, setLoadingRooms] = useState<boolean>(false);
+  const [availableRoomsDialogOpen, setAvailableRoomsDialogOpen] = useState<boolean>(false);
+  const [roomSearchTerm, setRoomSearchTerm] = useState('');
   
   const navigate = useNavigate();
   
@@ -117,7 +117,7 @@ const PatientList = () => {
   const loadPatients = async () => {
     try {
       setIsLoading(true);
-      const data = await getAllPatients();
+      const data = await getAllPatientsWithRooms();
       setPatients(data.filter(patient => patient.status !== 'inactive'));
     } catch (error) {
       toast.error('Erro ao carregar pacientes');
@@ -149,9 +149,32 @@ const PatientList = () => {
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredAvailableRooms = availableRooms.filter(room =>
+    room.number.toLowerCase().includes(roomSearchTerm.toLowerCase()) ||
+    room.sector.toLowerCase().includes(roomSearchTerm.toLowerCase())
+  );
+
   const calculateAge = (dateOfBirth: string): number => {
     if (!dateOfBirth) return 0;
     return differenceInYears(new Date(), new Date(dateOfBirth));
+  };
+
+  // Abrir modal de quartos disponíveis
+  const openAvailableRoomsModal = async (patient?: Patient) => {
+    try {
+      setLoadingRooms(true);
+      if (patient) {
+        setPatientToAssign(patient);
+      }
+      const rooms = await getAvailableRooms();
+      setAvailableRooms(rooms);
+      setAvailableRoomsDialogOpen(true);
+    } catch (error) {
+      toast.error('Erro ao carregar quartos disponíveis');
+      console.error('Erro:', error);
+    } finally {
+      setLoadingRooms(false);
+    }
   };
 
   // Abrir formulário para criar/editar
@@ -189,7 +212,6 @@ const PatientList = () => {
   const onSubmit = async (values: PatientFormValues) => {
     try {
       if (currentPatient?.id) {
-        // Atualizar paciente existente
         await updatePatient(currentPatient.id, values);
         toast.success('Paciente atualizado com sucesso!');
       } else {
@@ -235,31 +257,6 @@ const PatientList = () => {
     }
   };
 
-  // Abrir modal para atribuir quarto
-  const openAssignRoomModal = (patient: Patient) => {
-    setPatientToAssign(patient);
-    loadAvailableRooms();
-    setAssignRoomDialogOpen(true);
-  };
-
-  // Atribuir paciente a quarto
-  const handleAssignRoom = async () => {
-    if (!patientToAssign?.id || !selectedRoomId) return;
-    
-    try {
-      await assignPatientToRoom(patientToAssign.id, selectedRoomId);
-      toast.success(`Paciente atribuído ao quarto ${selectedRoomId} com sucesso!`);
-      loadPatients();
-    } catch (error) {
-      toast.error('Erro ao atribuir paciente ao quarto');
-      console.error('Erro ao atribuir paciente ao quarto:', error);
-    } finally {
-      setAssignRoomDialogOpen(false);
-      setPatientToAssign(null);
-      setSelectedRoomId(null);
-    }
-  };
-
   // Confirmar desvinculação de quarto
   const confirmUnassign = (patient: Patient) => {
     setPatientToUnassign(patient);
@@ -283,6 +280,22 @@ const PatientList = () => {
     }
   };
 
+  // Atribuir paciente a quarto
+  const handleAssignRoom = async (roomId: number) => {
+    if (!patientToAssign?.id) return;
+    
+    try {
+      await assignPatientToRoom(patientToAssign.id, roomId);
+      toast.success('Paciente atribuído ao quarto com sucesso!');
+      loadPatients();
+      setAvailableRoomsDialogOpen(false);
+      setPatientToAssign(null);
+    } catch (error) {
+      toast.error('Erro ao atribuir paciente ao quarto');
+      console.error('Erro ao atribuir paciente ao quarto:', error);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6">
@@ -296,6 +309,14 @@ const PatientList = () => {
             <Button onClick={() => openPatientForm()} className="flex items-center">
               <Plus className="mr-2 h-4 w-4" />
               Novo Paciente
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => openAvailableRoomsModal()}
+              className="flex items-center"
+            >
+              <Bed className="mr-2 h-4 w-4" />
+              Quartos Disponíveis
             </Button>
           </div>
         </div>
@@ -341,13 +362,10 @@ const PatientList = () => {
                         <TableCell className="font-medium">{patient.name}</TableCell>
                         <TableCell>{calculateAge(patient.dateOfBirth)} anos</TableCell>
                         <TableCell>
-                          {patient.roomId ? (
-                            <span 
-                              className="text-primary-blue hover:underline cursor-pointer"
-                              onClick={() => navigate(`/room/${patient.roomId}`)}
-                            >
-                              {patient.roomId}
-                            </span>
+                          {patient.roomId ? (                        
+                              <span className="text-primary-blue">
+                                <strong>Setor:</strong> {patient.room.sector} | <strong>Andar:</strong> {patient.room.floor} | <strong>Número:</strong> {patient.room.number}
+                              </span>
                           ) : (
                             <span className="text-gray-400">Não alocado</span>
                           )}
@@ -366,7 +384,7 @@ const PatientList = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => openAssignRoomModal(patient)}
+                                onClick={() => openAvailableRoomsModal(patient)}
                               >
                                 <LinkIcon className="h-4 w-4" />
                               </Button>
@@ -381,8 +399,8 @@ const PatientList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-red-600 hover:bg-red-50"
                               onClick={() => confirmDelete(patient)}
+                              className="text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -548,61 +566,111 @@ const PatientList = () => {
           </AlertDialogContent>
         </AlertDialog>
         
-        {/* Modal para atribuir paciente a um quarto */}
-        <Dialog open={assignRoomDialogOpen} onOpenChange={setAssignRoomDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+        {/* Modal de Quartos Disponíveis */}
+        <Dialog open={availableRoomsDialogOpen} onOpenChange={setAvailableRoomsDialogOpen}>
+          <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
               <DialogTitle>
-                Atribuir Paciente a um Quarto
+                {patientToAssign ? (
+                  <div className="flex items-center gap-2">
+                    <span>Atribuir quarto a:</span>
+                    <Badge variant="outline">
+                      <User className="h-4 w-4 mr-2" />
+                      {patientToAssign.name}
+                    </Badge>
+                  </div>
+                ) : (
+                  'Quartos Disponíveis'
+                )}
               </DialogTitle>
               <DialogDescription>
-                Selecione um quarto disponível para o paciente {patientToAssign?.name}.
+                {availableRooms.length} quarto(s) disponível(is) para alocação
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-2">
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar quartos por número ou setor..."
+                  value={roomSearchTerm}
+                  onChange={(e) => setRoomSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <div className="py-2">
               {loadingRooms ? (
-                <div className="text-center py-4">Carregando quartos disponíveis...</div>
-              ) : availableRooms.length === 0 ? (
-                <div className="text-center py-4">Não há quartos disponíveis.</div>
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  <span className="ml-2">Carregando quartos...</span>
+                </div>
+              ) : filteredAvailableRooms.length === 0 ? (
+                <div className="text-center py-6 space-y-2">
+                  <Bed className="mx-auto h-8 w-8 text-gray-400" />
+                  <p className="font-medium">
+                    {roomSearchTerm ? 
+                      'Nenhum quarto encontrado para sua busca' : 
+                      'Nenhum quarto disponível no momento'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {roomSearchTerm ? 
+                      'Tente buscar por outro termo' : 
+                      'Todos os quartos estão ocupados'}
+                  </p>
+                </div>
               ) : (
-                <div className="space-y-2">
-                  <FormItem>
-                    <FormLabel>Quarto</FormLabel>
-                    <Select onValueChange={(value) => setSelectedRoomId(Number(value))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um quarto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableRooms.map((room) => (
-                          <SelectItem key={room.id} value={String(room.id)}>
-                            Quarto {room.number} (Setor {room.sector}, Andar {room.floor})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
+                <div className="border rounded-md max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Setor</TableHead>
+                        <TableHead>Andar</TableHead>
+                        <TableHead>Número</TableHead>
+                        <TableHead>Status</TableHead>
+                        {patientToAssign && <TableHead className="text-right">Ação</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAvailableRooms.map((room) => (
+                        <TableRow key={room.id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium">{room.sector}</TableCell>
+                          <TableCell>{room.floor}º</TableCell>
+                          <TableCell>{room.number}</TableCell>
+                          <TableCell>
+                            <Badge variant={room.isAvailable ? "default" : "destructive"}>
+                              {room.isAvailable ? "Disponível" : "Ocupado"}
+                            </Badge>
+                          </TableCell>
+                          {patientToAssign && (
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                onClick={() => handleAssignRoom(room.id)}
+                              >
+                                Atribuir
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
             
             <DialogFooter>
               <Button 
-                type="button" 
-                variant="outline" 
                 onClick={() => {
-                  setAssignRoomDialogOpen(false);
+                  setAvailableRoomsDialogOpen(false);
                   setPatientToAssign(null);
-                  setSelectedRoomId(null);
+                  setRoomSearchTerm('');
                 }}
+                className="min-w-[100px]"
               >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleAssignRoom} 
-                disabled={!selectedRoomId || loadingRooms}
-              >
-                Atribuir
+                Fechar
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -614,7 +682,7 @@ const PatientList = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Desvincular paciente do quarto</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja desvincular o paciente {patientToUnassign?.name} do quarto {patientToUnassign?.roomId}?
+                Tem certeza que deseja desvincular o paciente {patientToUnassign?.name} do quarto?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
