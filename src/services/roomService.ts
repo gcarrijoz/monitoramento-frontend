@@ -37,12 +37,7 @@ export const getRoomById = async (id: number): Promise<Room> => {
 };
 
 // Criar um novo quarto
-export const createRoom = async (roomData: {
-  sector: string;
-  floor: number;
-  number: string;
-  isAvailable: boolean;
-}): Promise<Room> => {
+export const createRoom = async (roomData: Room): Promise<Room> => {
   try {
     const response = await api.post('/rooms', roomData);
     return response.data;

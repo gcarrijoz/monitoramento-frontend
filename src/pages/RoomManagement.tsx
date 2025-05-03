@@ -149,12 +149,13 @@ const RoomManagement = () => {
         toast.success('Quarto atualizado com sucesso!');
       } else {
         // Criar novo quarto - garantindo que todos os campos necessários estão presentes
-        await createRoom({
+        const newRoom: RoomType = {
           sector: values.sector,
           floor: values.floor,
           number: values.number,
-          isAvailable: values.isAvailable,
-        });
+          isAvailable: values.isAvailable
+        };
+        await createRoom(newRoom);
         toast.success('Quarto criado com sucesso!');
       }
       setDialogOpen(false);

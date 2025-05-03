@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { usePatients } from '@/contexts/PatientContext';
-import { Bell, Home, Users, Settings, LogOut } from 'lucide-react';
+import { Bell, Home, Users, Settings, LogOut, Bed } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +52,16 @@ const Header = () => {
               >
                 <Users className="mr-2 h-4 w-4" />
                 Pacientes
+              </Button>
+            </Link>
+            
+            <Link to="/rooms">
+              <Button
+                variant={isActive('/rooms') ? "default" : "ghost"}
+                className={`px-3 ${isActive('/rooms') ? 'bg-primary-blue text-white' : 'text-gray-700'}`}
+              >
+                <Bed className="mr-2 h-4 w-4" />
+                Quartos
               </Button>
             </Link>
             
