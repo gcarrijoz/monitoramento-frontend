@@ -127,6 +127,7 @@ const Dashboard = () => {
             </div>
           </div>
           
+          {/*}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="font-medium text-gray-500">Alertas Ativos</h3>
             <div className="mt-2 flex items-end gap-2">
@@ -148,6 +149,8 @@ const Dashboard = () => {
               </span>
             </div>
           </div>
+
+          {*/}
         </div>
         
         <h2 className="text-xl font-semibold mb-4">Todos os Quartos</h2>

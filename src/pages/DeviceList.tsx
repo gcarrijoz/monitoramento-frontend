@@ -43,7 +43,7 @@ import {
   unassignDevice,
   getAllDevicesWithRooms
 } from '@/services/deviceService';
-import { Room, getAllRooms } from '@/services/roomService';
+import { Room, getAllRooms, getRoomWithoutDevices } from '@/services/roomService';
 import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
 
 const DeviceList = () => {
@@ -69,7 +69,7 @@ const DeviceList = () => {
         setIsLoading(true);
         const [devicesData, roomsData] = await Promise.all([
           getAllDevicesWithRooms(),
-          getAllRooms()
+          getRoomWithoutDevices()
         ]);
         setDevices(devicesData);
         setRooms(roomsData);
@@ -454,40 +454,33 @@ const DeviceList = () => {
             
             <div className="py-4">
               <div className="border rounded-md max-h-[400px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Setor</TableHead>
-                      <TableHead>Andar</TableHead>
-                      <TableHead>Número</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ação</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Setor</TableHead>
+                    <TableHead>Andar</TableHead>
+                    <TableHead>Número</TableHead>
+                    <TableHead className="text-right">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rooms.map((room) => (
+                    <TableRow key={room.id} className="hover:bg-gray-50">
+                      <TableCell>{room.sector}</TableCell>
+                      <TableCell>{room.floor}º</TableCell>
+                      <TableCell>Quarto {room.number}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleAssignToRoom(room.id)}
+                        >
+                          Vincular
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rooms.map((room) => (
-                      <TableRow key={room.id} className="hover:bg-gray-50">
-                        <TableCell>{room.sector}</TableCell>
-                        <TableCell>{room.floor}º</TableCell>
-                        <TableCell>Quarto {room.number}</TableCell>
-                        <TableCell>
-                          <Badge variant={room.isAvailable ? "default" : "destructive"}>
-                            {room.isAvailable ? "Disponível" : "Ocupado"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleAssignToRoom(room.id)}
-                            disabled={!room.isAvailable}
-                          >
-                            Vincular
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody>
+              </Table>
               </div>
             </div>
             

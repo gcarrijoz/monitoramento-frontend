@@ -34,6 +34,18 @@ export const getAllRooms = async (): Promise<Room[]> => {
   }
 };
 
+export const getRoomWithoutDevices = async (): Promise<Room[]> => {
+  try {
+    const response = await api.get('/room/without-devices');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar quartos:', error);
+    throw error;
+  }
+};
+
+
+
 // Obter um quarto específico pelo ID
 export const getRoomById = async (id: number): Promise<Room> => {
   try {

@@ -91,6 +91,7 @@ const Header = () => {
         <div className="flex items-center">
           {user && (
             <>
+            {/*}
               <div className="mr-2 relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -103,6 +104,7 @@ const Header = () => {
                       )}
                     </Button>
                   </DropdownMenuTrigger>
+            
                   <DropdownMenuContent align="end" className="w-72">
                     <h3 className="font-medium px-2 py-1.5 border-b">Notificações</h3>
                     {alerts.length > 0 ? (
@@ -127,8 +129,10 @@ const Header = () => {
                       <p className="text-sm text-gray-500 p-3">Nenhuma notificação</p>
                     )}
                   </DropdownMenuContent>
+              
                 </DropdownMenu>
               </div>
+            {*/}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
