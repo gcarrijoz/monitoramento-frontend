@@ -74,7 +74,7 @@ const Header = () => {
                 Dispositivos
               </Button>
             </Link>
-            
+            {/*}
             <Link to="/settings">
               <Button
                 variant={isActive('/settings') ? "default" : "ghost"}
@@ -84,6 +84,7 @@ const Header = () => {
                 Configurações
               </Button>
             </Link>
+            {*/}
           </nav>
         )}
 

@@ -5,7 +5,8 @@ import api from './api';
 export interface Patient {
   id: number;
   name: string;
-  currentHeartRate?: number;
+  maxHeartRate?: number;
+  minHeartRate?: number;
   status?: PatientStatus;
 }
 export interface Room {
@@ -98,6 +99,6 @@ export const unassignPatientFromRoom = async (roomId: number): Promise<void> => 
 };
 
 export const getRoomsWithPatients = async (): Promise<Room[]> => {
-  const response = await api.get('/rooms/with-patients');
+  const response = await api.get('/room/with-patients');
   return response.data;
 };

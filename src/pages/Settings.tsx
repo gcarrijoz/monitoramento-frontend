@@ -39,7 +39,7 @@ const Settings = () => {
                       <label className="block text-sm text-gray-500 mb-1">Mínimo (bpm)</label>
                       <input
                         type="number"
-                        defaultValue={60}
+                        defaultValue={55}
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
                     </div>
@@ -47,7 +47,7 @@ const Settings = () => {
                       <label className="block text-sm text-gray-500 mb-1">Máximo (bpm)</label>
                       <input
                         type="number"
-                        defaultValue={100}
+                        defaultValue={120}
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
                     </div>

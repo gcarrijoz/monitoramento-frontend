@@ -37,8 +37,8 @@ const RoomDetail = () => {
   const patient = getPatientByRoom(roomNumber);
   
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
-  const [minHeartRate, setMinHeartRate] = useState(patient?.minHeartRate || 60);
-  const [maxHeartRate, setMaxHeartRate] = useState(patient?.maxHeartRate || 100);
+  const [minHeartRate, setMinHeartRate] = useState(patient?.minHeartRate || 55);
+  const [maxHeartRate, setMaxHeartRate] = useState(patient?.maxHeartRate || 120);
 
   // Redirect if room not found or no patient in room
   if (isNaN(roomNumber) || !patient) {

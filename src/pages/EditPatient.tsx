@@ -23,8 +23,8 @@ const EditPatient = () => {
     age: 0,
     birthDate: '',
     diagnosis: '',
-    minHeartRate: 60,
-    maxHeartRate: 100,
+    minHeartRate: 55,
+    maxHeartRate: 120,
   });
 
   // Load patient data when component mounts

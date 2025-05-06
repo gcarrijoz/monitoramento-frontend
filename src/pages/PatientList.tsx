@@ -77,8 +77,8 @@ const patientSchema = z.object({
   cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
   gender: z.string().min(1, "O gênero é obrigatório"),
   dateOfBirth: z.string().min(1, "A data de nascimento é obrigatória"),
-  minHeartRate: z.number().min(0, "Valor mínimo deve ser maior ou igual a 0").optional(),
-  maxHeartRate: z.number().min(0, "Valor máximo deve ser maior ou igual a 0").optional(),
+  minHeartRate: z.number().min(0, "Valor mínimo deve ser maior ou igual a 0").default(55),
+  maxHeartRate: z.number().min(0, "Valor máximo deve ser maior ou igual a 0").default(120)
 });
 
 type PatientFormValues = z.infer<typeof patientSchema>;
@@ -108,8 +108,8 @@ const PatientList = () => {
       cpf: '',
       gender: '',
       dateOfBirth: '',
-      minHeartRate: undefined,
-      maxHeartRate: undefined,
+      minHeartRate: 55,
+      maxHeartRate: 120,
     },
   });
 
@@ -220,8 +220,8 @@ const PatientList = () => {
           cpf: values.cpf,
           gender: values.gender,
           dateOfBirth: values.dateOfBirth,
-          minHeartRate: values.minHeartRate || null,
-          maxHeartRate: values.maxHeartRate || null
+          minHeartRate: values.minHeartRate,
+          maxHeartRate: values.maxHeartRate
         };
         await createPatient(newPatient);
         toast.success('Paciente criado com sucesso!');
@@ -503,9 +503,12 @@ const PatientList = () => {
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="60"
                             {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                            value={field.value || 60} 
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              field.onChange(value === '' ? 60 : Number(value));
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -520,12 +523,15 @@ const PatientList = () => {
                       <FormItem>
                         <FormLabel>Frequência Cardíaca Máxima</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="100"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          />
+                        <Input
+                          type="number"
+                          {...field}
+                          value={field.value || 100} // Garante que nunca será vazio
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value === '' ? 100 : Number(value));
+                          }}
+                        />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

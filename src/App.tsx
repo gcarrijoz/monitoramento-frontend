@@ -23,6 +23,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import DeviceList from "./pages/DeviceList";
+import { BPMDisplay } from "./components/TesteSocket";
 
 const queryClient = new QueryClient();
 
@@ -49,7 +50,8 @@ const App = () => (
                 <Route path="/edit-patient/:patientId" element={<EditPatient />} />
                 <Route path="/assign-patient/:roomId" element={<AssignPatient />} />
                 <Route path="/assign-patient-to-room/:patientId" element={<AssignPatientToRoom />} />
-                <Route path="/settings" element={<Settings />} />
+                <Route path="/teste" element={<BPMDisplay/>} />
+                {/*}<Route path="/settings" element={<Settings />} />{*/}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
