@@ -28,8 +28,8 @@ const Header = () => {
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center">
           <div className="flex items-center">
-            <span className="text-primary-blue text-2xl font-semibold">Pulse</span>
-            <span className="text-gray-800 text-2xl font-semibold">VistaCare</span>
+            <span className="text-primary-blue text-2xl font-semibold">Batimentos</span>
+            <span className="text-gray-800 text-2xl font-semibold">3000</span>
           </div>
         </Link>
 

@@ -39,8 +39,8 @@ const Signup = () => {
               <Heart className="h-12 w-12 text-primary-blue" />
             </div>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">
-              <span className="text-primary-blue">Pulse</span>
-              <span className="text-gray-900">VistaCare</span>
+              <span className="text-primary-blue">Batimentos</span>
+              <span className="text-gray-900">3000</span>
             </h1>
             <p className="mt-2 text-sm text-gray-500">
               Sistema de Monitoramento de Pacientes
